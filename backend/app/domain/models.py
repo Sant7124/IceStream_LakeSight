@@ -1,0 +1,146 @@
+from enum import Enum
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+from datetime import datetime
+
+class SystemStatus(str, Enum):
+    HEALTHY = "HEALTHY"
+    WARNING = "WARNING"
+    DEGRADED = "DEGRADED"
+    CRITICAL = "CRITICAL"
+    QUARANTINED = "QUARANTINED"
+    RECOVERING = "RECOVERING"
+    CIRCUIT_BREAKER_OPEN = "CIRCUIT_BREAKER_OPEN"
+
+class Event(BaseModel):
+    id: str
+    timestamp: datetime
+    severity: str
+    source: str
+    event_type: str = Field(alias="eventType")
+    message: str
+
+class Transaction(BaseModel):
+    event_id: str
+    event_time: datetime
+    source: str
+    schema_version: str
+    transaction_id: str
+    customer_id: str
+    product_id: str
+    quantity: int
+    unit_price: float
+    currency: str
+    payment_method: str
+    status: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class QualityRuleId(str, Enum):
+    REQUIRED_FIELD_MISSING = "DQ-001"
+    NULL_REQUIRED_FIELD = "DQ-002"
+    INVALID_TYPE = "DQ-003"
+    INVALID_RANGE = "DQ-004"
+    INVALID_ENUM = "DQ-005"
+    DUPLICATE_EVENT = "DQ-006"
+    SCHEMA_MISMATCH = "DQ-007"
+    UNKNOWN_SCHEMA_VERSION = "DQ-008"
+
+class QualityMetric(BaseModel):
+    total_events: int = Field(alias="totalEvents")
+    valid_events: int = Field(alias="validEvents")
+    invalid_events: int = Field(alias="invalidEvents")
+    quality_score: float = Field(alias="qualityScore")
+    timestamp: str
+
+class QualityViolation(BaseModel):
+    id: str
+    rule_id: QualityRuleId = Field(alias="ruleId")
+    description: str
+    severity: str
+    count: int
+    timestamp: str
+
+class PipelineMetric(BaseModel):
+    throughput: float
+    latency: float
+    error_rate: float = Field(alias="errorRate")
+    processed: int
+    errors: int
+
+class IncidentSeverity(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class IncidentStatus(str, Enum):
+    OPEN = "OPEN"
+    INVESTIGATING = "INVESTIGATING"
+    MITIGATING = "MITIGATING"
+    RECOVERING = "RECOVERING"
+    RESOLVED = "RESOLVED"
+
+class Incident(BaseModel):
+    id: str
+    severity: IncidentSeverity
+    status: IncidentStatus
+    started_at: str = Field(alias="startedAt")
+    resolved_at: Optional[str] = Field(None, alias="resolvedAt")
+    duration: Optional[str] = None
+    error_rate: float = Field(alias="errorRate")
+    threshold: float
+    affected_component: str = Field(alias="affectedComponent")
+    root_cause: str = Field(alias="rootCause")
+    description: str
+
+class DLQRecord(BaseModel):
+    id: str
+    timestamp: str
+    event_id: str = Field(alias="eventId")
+    transaction_id: str = Field(alias="transactionId")
+    rule_id: str = Field(alias="ruleId")
+    field: str
+    expected: str
+    actual: str
+    source: str
+    schema_version: str = Field(alias="schemaVersion")
+    severity: str
+
+class IcebergSnapshot(BaseModel):
+    id: str
+    timestamp: str
+    records: int
+    operation: str
+    summary: str
+
+class ServiceHealth(BaseModel):
+    id: str
+    name: str
+    status: SystemStatus
+    latency_ms: int = Field(alias="latencyMs")
+    uptime_percentage: float = Field(alias="uptimePercentage")
+    current_load: float = Field(alias="currentLoad")
+    last_heartbeat: str = Field(alias="lastHeartbeat")
+
+class CircuitBreakerState(BaseModel):
+    service_id: str = Field(alias="serviceId")
+    is_open: bool = Field(alias="isOpen")
+    failure_rate: float = Field(alias="failureRate")
+    last_failure: str = Field(alias="lastFailure")
+    opened_at: Optional[str] = Field(None, alias="openedAt")
+
+class WebSocketEventType(str, Enum):
+    PIPELINE_STATUS_CHANGED = "PIPELINE_STATUS_CHANGED"
+    QUALITY_ALERT = "QUALITY_ALERT"
+    CIRCUIT_BREAKER_OPENED = "CIRCUIT_BREAKER_OPENED"
+    CIRCUIT_BREAKER_CLOSED = "CIRCUIT_BREAKER_CLOSED"
+    DLQ_RECORD_ADDED = "DLQ_RECORD_ADDED"
+    INCIDENT_CREATED = "INCIDENT_CREATED"
+    INCIDENT_RESOLVED = "INCIDENT_RESOLVED"
+    METRIC_UPDATED = "METRIC_UPDATED"
+    SERVICE_STATUS_CHANGED = "SERVICE_STATUS_CHANGED"
+
+class WebSocketEvent(BaseModel):
+    type: WebSocketEventType
+    timestamp: str
+    payload: Dict[str, Any]
