@@ -1,0 +1,64 @@
+
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardPage from "./pages/DashboardPage";
+import QualityPage from "./pages/QualityPage";
+import SystemPage from "./pages/SystemPage";
+import PipelinePage from "./pages/PipelinePage";
+import ReliabilityPage from "./pages/ReliabilityPage";
+import LakehousePage from "./pages/LakehousePage";
+import ObservabilityPage from "./pages/ObservabilityPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import SecurityAuditPage from "./pages/SecurityAuditPage";
+import NetworkMeshPage from "./pages/NetworkMeshPage";
+import CloudConfigPage from "./pages/CloudConfigPage";
+import ContactUsPage from "./pages/ContactUsPage";
+import { useStore } from "./lib/store/useStore";
+
+import LandingPage from "./pages/LandingPage";
+
+function App() {
+  const fetchInitialData = useStore(state => state.fetchInitialData);
+  const connectWebSocket = useStore(state => state.connectWebSocket);
+  const disconnectWebSocket = useStore(state => state.disconnectWebSocket);
+
+  useEffect(() => {
+    fetchInitialData();
+    connectWebSocket();
+    return () => disconnectWebSocket();
+  }, [fetchInitialData, connectWebSocket, disconnectWebSocket]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Existing Application Console */}
+        <Route path="/console" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/console/overview" replace />} />
+          <Route path="overview" element={<DashboardPage />} />
+          <Route path="contact-us" element={<ContactUsPage />} />
+          <Route path="pipeline/*" element={<PipelinePage />} />
+          <Route path="quality/*" element={<QualityPage />} />
+          <Route path="reliability/*" element={<ReliabilityPage />} />
+          <Route path="lakehouse/*" element={<LakehousePage />} />
+          <Route path="observability/*" element={<ObservabilityPage />} />
+          <Route path="analytics/*" element={<AnalyticsPage />} />
+          <Route path="security/*" element={<SecurityAuditPage />} />
+          <Route path="network/*" element={<NetworkMeshPage />} />
+          <Route path="cloud/*" element={<CloudConfigPage />} />
+          <Route path="system/*" element={<SystemPage />} />
+          <Route path="contact" element={<ContactUsPage />} />
+          <Route path="*" element={<div className="p-8">404 Not Found</div>} />
+        </Route>
+
+        {/* Catch-all for legacy paths like /quality to redirect to root or show 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
