@@ -1,0 +1,57 @@
+# =====================================================================
+# Ice Stream — Render Deployment Blueprint ($0 Free Plan)
+# =====================================================================
+# Deploy directly from Render Dashboard using "New Blueprint Instance"
+# https://render.com/docs/blueprint-spec
+
+version: "1"
+
+services:
+  - type: web
+    name: ice-stream-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ALLOWED_ORIGINS
+        sync: false # Set to your deployed Vercel domain in the Render dashboard
+      - key: METRICS_ENABLED
+        value: "true"
+      - key: CIRCUIT_BREAKER_ENABLED
+        value: "true"
+      - key: CIRCUIT_BREAKER_ERROR_RATE_THRESHOLD
+        value: "0.02"
+      - key: OBSERVABILITY_DB_PATH
+        value: data/observability.db
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false # Set in Render Dashboard
+      - key: KAFKA_SECURITY_PROTOCOL
+        value: SASL_SSL
+      - key: KAFKA_SASL_MECHANISMS
+        value: PLAIN
+      - key: KAFKA_SASL_USERNAME
+        sync: false
+      - key: KAFKA_SASL_PASSWORD
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: B2_ACCESS_KEY_ID
+        sync: false
+      - key: B2_SECRET_ACCESS_KEY
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
