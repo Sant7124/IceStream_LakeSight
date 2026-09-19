@@ -66,15 +66,18 @@ def submit_contact(contact: ContactRequest):
     # HTTPS port 443 is unrestricted on all cloud platforms including Render free tier
     resend_api_key = os.getenv("RESEND_API_KEY")
     if resend_api_key:
+        resend_api_key = resend_api_key.strip('\"\' ')
         try:
             logger.info("Attempting dispatch via Resend HTTPS Email API...")
             resend_url = "https://api.resend.com/emails"
+            # In Resend sandbox testing mode, 'to' must be the registered account owner email
+            target_to = [santosh_email] if santosh_email in recipients else recipients
             payload = {
-                "from": os.getenv("RESEND_FROM_EMAIL", "Ice Stream Portal <onboarding@resend.dev>"),
-                "to": recipients,
+                "from": os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
+                "to": target_to,
                 "reply_to": contact.email,
                 "subject": f"[Ice Stream Contact] {contact.subject}",
-                "text": f"Inquiry from: {contact.name} ({contact.email})\n\n{contact.message}",
+                "text": f"New inquiry submitted via Ice Stream Contact Us portal:\n\nSender Name:  {contact.name}\nSender Email: {contact.email}\nSubject:      {contact.subject}\n\nMessage:\n{contact.message}\n\n---\nForwarded to: {santosh_email}",
             }
             req = urllib.request.Request(
                 resend_url,
@@ -82,18 +85,32 @@ def submit_contact(contact: ContactRequest):
                 headers={
                     "Authorization": f"Bearer {resend_api_key}",
                     "Content-Type": "application/json",
+                    "User-Agent": "IceStream-Observability/1.0",
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 if resp.status in (200, 201):
-                    logger.info("Email delivered successfully via Resend HTTPS API")
+                    logger.info("Email delivered successfully via Resend HTTPS API to %s", santosh_email)
                     return {
                         "success": True,
                         "message": f"Message sent successfully to {santosh_email}!",
-                        "recipients": recipients,
+                        "recipients": target_to,
                         "persisted": True,
                     }
+        except urllib.error.HTTPError as http_err:
+            err_body = ""
+            try:
+                err_body = http_err.read().decode("utf-8")
+            except Exception:
+                pass
+            logger.warning(f"Resend HTTPS dispatch HTTPError {http_err.code}: {err_body}")
+            return {
+                "success": False,
+                "message": f"Resend API Notice ({http_err.code}): {err_body or str(http_err)}. Message is preserved in database.",
+                "recipients": recipients,
+                "persisted": True,
+            }
         except Exception as resend_err:
             logger.warning(f"Resend HTTPS dispatch failed: {resend_err}. Proceeding with SMTP fallback...")
 
