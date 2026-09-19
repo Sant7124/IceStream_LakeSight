@@ -38,7 +38,7 @@ Render provides a completely free tier for Python web services with 512MB RAM an
 ### Option A: 1-Click Render Blueprint (Recommended)
 1. Log in to [Render](https://dashboard.render.com).
 2. Click **New +** → **Blueprint**.
-3. Select your repository `Ice-stream-lakehouse-observability`.
+3. Select your repository `IceStream_LakeSight`.
 4. Render will detect `render.yaml` automatically, configure the free plan, set the root directory to `backend`, and prompt you only for your environment variables!
 
 ### Option B: Manual Web Service Setup
