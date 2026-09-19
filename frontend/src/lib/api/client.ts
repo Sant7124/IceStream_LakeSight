@@ -4,8 +4,11 @@
  */
 
 // Normalize backend URL: if provided, guarantee it routes to /api endpoint
-const rawApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
-const API_BASE = rawApiUrl
+const rawApiUrl = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://icestream-lakesight.onrender.com' : '')
+).replace(/\/+$/, '');
+export const API_BASE = rawApiUrl
   ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`)
   : '/api';
 
@@ -162,4 +165,16 @@ export const api = {
   stopSimulationStream: () => request<any>('/simulation/stream/stop', { method: 'POST' }),
 
   getSimulationStreamStatus: () => request<{ running: boolean; error_rate: number }>('/simulation/stream/status'),
+
+  // Contact Us Inquiry Submission
+  submitContact: (data: { name: string; email: string; subject: string; message: string }) =>
+    request<{
+      success: boolean;
+      message: string;
+      recipients?: string[];
+      persisted?: boolean;
+    }>('/contact', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };

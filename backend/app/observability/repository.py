@@ -109,13 +109,28 @@ class ObservabilityRepository:
             );
             """)
 
-            # 4. Operational indexes
+            # 4. contact_inquiries table (persists direct user communications)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS contact_inquiries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                delivery_status TEXT NOT NULL,
+                delivery_detail TEXT
+            );
+            """)
+
+            # 5. Operational indexes
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_created_at ON incidents(created_at);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_incidents_type ON incidents(incident_type);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_pipeline_events_time ON pipeline_events(event_time);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_quarantine_time ON quarantine_records(timestamp);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_quarantine_rule ON quarantine_records(rule_id);")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_contact_inquiries_created ON contact_inquiries(created_at);")
 
             conn.commit()
 
@@ -290,3 +305,38 @@ class ObservabilityRepository:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM quarantine_records")
             conn.commit()
+
+    def save_contact_inquiry(
+        self,
+        name: str,
+        email: str,
+        subject: str,
+        message: str,
+        delivery_status: str,
+        delivery_detail: str = "",
+    ) -> int:
+        """Saves a user operational inquiry into SQLite for persistence and audit."""
+        from datetime import datetime, timezone
+        now_iso = datetime.now(timezone.utc).isoformat()
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO contact_inquiries (name, email, subject, message, created_at, delivery_status, delivery_detail)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (name, email, subject, message, now_iso, delivery_status, delivery_detail),
+            )
+            inquiry_id = cursor.lastrowid or 0
+            conn.commit()
+            return inquiry_id
+
+    def list_contact_inquiries(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """Returns recent contact inquiries."""
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM contact_inquiries ORDER BY id DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            )
+            return [dict(r) for r in cursor.fetchall()]

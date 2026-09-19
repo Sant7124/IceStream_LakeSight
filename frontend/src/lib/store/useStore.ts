@@ -618,9 +618,13 @@ export const useStore = create<AppState>((set, get) => ({
       wsUrl = `${wsProto}//${apiHost}/ws`;
     }
     if (!wsUrl) {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      wsUrl = `${protocol}//${host}/ws`;
+      if (import.meta.env.PROD) {
+        wsUrl = 'wss://icestream-lakesight.onrender.com/ws';
+      } else {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        wsUrl = `${protocol}//${host}/ws`;
+      }
     }
 
     try {

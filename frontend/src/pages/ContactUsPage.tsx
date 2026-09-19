@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { api } from "../lib/api/client";
 
 export default function ContactUsPage() {
   const [formData, setFormData] = useState({
@@ -37,17 +38,9 @@ export default function ContactUsPage() {
     setSuccessMessage(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const data = await api.submitContact(formData);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         setSuccessMessage(
           data.message || "Message delivered to Sant7124@gmail.com!"
         );
@@ -63,13 +56,13 @@ export default function ContactUsPage() {
         }, 8000);
       } else {
         setErrorMessage(
-          data.message || "Unable to send email. Please check your backend SMTP credentials in .env."
+          data.message || "Unable to send email. Please check your backend credentials."
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Contact Form Error:", error);
       setErrorMessage(
-        "Network connection error: Unable to communicate with FastAPI backend on port 8000."
+        error.message || "Network connection error: Unable to communicate with backend service."
       );
     } finally {
       setIsSubmitting(false);

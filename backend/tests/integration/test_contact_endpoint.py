@@ -22,7 +22,7 @@ def test_contact_endpoint_validation_success():
     mock_smtp_class = MagicMock()
     mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
 
-    with patch("smtplib.SMTP_SSL", mock_smtp_class):
+    with patch("smtplib.SMTP_SSL", mock_smtp_class), patch.dict("os.environ", {"EMAIL_PASSWORD": "mock_app_password_16char"}):
         response = client.post("/api/contact", json=payload)
         assert response.status_code == 200
         data = response.json()
@@ -30,6 +30,34 @@ def test_contact_endpoint_validation_success():
         assert "Sant7124@gmail.com" in data["recipients"]
         assert mock_smtp_instance.login.called
         assert mock_smtp_instance.send_message.called
+
+
+def test_contact_endpoint_render_network_unreachable_fallback():
+    """Verify endpoint gracefully handles Render Free Tier outbound SMTP block ([Errno 101])."""
+    payload = {
+        "name": "Santosh Yadav",
+        "email": "sant7124@gmail.com",
+        "subject": "Render Cloud Test",
+        "message": "Testing network unreachable fallback."
+    }
+
+    mock_smtp_class = MagicMock(side_effect=OSError(101, "Network is unreachable"))
+
+    with patch("smtplib.SMTP_SSL", mock_smtp_class), patch("smtplib.SMTP", mock_smtp_class), patch.dict("os.environ", {"EMAIL_PASSWORD": "mock_app_password_16char"}):
+        response = client.post("/api/contact", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["persisted"] is True
+        assert "registry" in data["message"].lower() or "database" in data["message"].lower()
+
+
+def test_contact_endpoint_list_messages():
+    """Verify stored messages can be retrieved via /api/contact/messages."""
+    response = client.get("/api/contact/messages?limit=10")
+    assert response.status_code == 200
+    messages = response.json()
+    assert isinstance(messages, list)
 
 
 def test_contact_endpoint_invalid_email_format():
