@@ -70,14 +70,14 @@ def submit_contact(contact: ContactRequest):
         try:
             logger.info("Attempting dispatch via Resend HTTPS Email API...")
             resend_url = "https://api.resend.com/emails"
-            # In Resend sandbox testing mode, 'to' must be the registered account owner email
-            target_to = [santosh_email] if santosh_email in recipients else recipients
+            # In Resend sandbox testing mode, 'to' must strictly be the lowercase verified account owner email
+            resend_recipient = (os.getenv("RESEND_TO_EMAIL") or santosh_email).strip('\"\' ').lower()
             payload = {
-                "from": os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-                "to": target_to,
+                "from": os.getenv("RESEND_FROM_EMAIL", "Ice Stream <onboarding@resend.dev>"),
+                "to": [resend_recipient],
                 "reply_to": contact.email,
                 "subject": f"[Ice Stream Contact] {contact.subject}",
-                "text": f"New inquiry submitted via Ice Stream Contact Us portal:\n\nSender Name:  {contact.name}\nSender Email: {contact.email}\nSubject:      {contact.subject}\n\nMessage:\n{contact.message}\n\n---\nForwarded to: {santosh_email}",
+                "text": f"New inquiry submitted via Ice Stream Contact Us portal:\n\nSender Name:  {contact.name}\nSender Email: {contact.email}\nSubject:      {contact.subject}\n\nMessage:\n{contact.message}\n\n---\nForwarded to: {santosh_email}\nReply directly to this email to respond to {contact.name}.",
             }
             req = urllib.request.Request(
                 resend_url,
@@ -91,11 +91,11 @@ def submit_contact(contact: ContactRequest):
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
                 if resp.status in (200, 201):
-                    logger.info("Email delivered successfully via Resend HTTPS API to %s", santosh_email)
+                    logger.info("Email delivered successfully via Resend HTTPS API to %s", resend_recipient)
                     return {
                         "success": True,
                         "message": f"Message sent successfully to {santosh_email}!",
-                        "recipients": target_to,
+                        "recipients": recipients,
                         "persisted": True,
                     }
         except urllib.error.HTTPError as http_err:
