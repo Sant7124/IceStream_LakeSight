@@ -21,3 +21,6 @@ kafka-python>=2.0.2
 
 # Email / Contact Us
 # (Uses Python built-in smtplib & email modules)
+
+# Synthetic Data & Simulation
+Faker==37.8.0
