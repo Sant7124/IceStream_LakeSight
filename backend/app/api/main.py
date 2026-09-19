@@ -75,6 +75,8 @@ allowed_origins = [
     "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://icestream-lakesight07.vercel.app",
+    "https://icestream-lakesight.vercel.app",
 ]
 
 # Allow custom production domains via ALLOWED_ORIGINS or CORS_ORIGINS
