@@ -54,6 +54,7 @@ htmlcov/
 *.p12
 *.pfx
 secrets/
+push_to_github.bat
 
 # Data and Artifacts
 data/raw/
